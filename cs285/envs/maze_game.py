@@ -53,6 +53,7 @@ class MazeGameEnv(gym.Env):
         self.goal = np.array(goal) # Goal represented as a 1D NumPy array
         self.bag = np.array([0] * NUM_DISTINCT_ITEMS) # Bag represented as a 1D NumPy array
         self.pos = playerPosition # Starting position is current posiiton of agent
+        assert self.goal.shape == self.bag.shape
 
         self.num_rows, self.num_cols = self.board.shape
 
@@ -93,6 +94,8 @@ class MazeGameEnv(gym.Env):
         new_pos = np.array(self.pos)
         new_bag = np.array(self.bag)
 
+        trigger = False
+
         if 0 <= action <= 3:
             if action == 0:  # Up
                 new_pos[0] -= 1
@@ -110,8 +113,10 @@ class MazeGameEnv(gym.Env):
 
         elif action == 4:
             item = new_board[new_pos[0], new_pos[1]]
+            
             if 0 <= item <= NUM_DISTINCT_ITEMS:
                 new_bag[item] += 1
+                trigger = True
                 new_board[new_pos[0], new_pos[1]] = -1
                 self.bag = new_bag
                 self.board = new_board
@@ -127,8 +132,9 @@ class MazeGameEnv(gym.Env):
         else:
             reward = -0.01
             done = False
+        reward += 0.01*trigger
 
-        return self._generate_observation(), reward, done, {}
+        return self._generate_observation(), reward, done, {"bag" + str(i): self.bag[i] for i in range(4)}
 
     def _is_valid_position(self, pos):
         row, col = pos

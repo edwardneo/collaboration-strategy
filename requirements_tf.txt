@@ -7,7 +7,7 @@ cachetools==5.3.2
 certifi==2023.7.22
 charset-normalizer==3.3.1
 cloudpickle==3.0.0
--e git+ssh://git@github.com/edwardneo/collaboration-strategy.git@9ead7308c0b4761178d8ed9ddc94dfa6f7eaa3b2#egg=cs285
+
 cycler==0.12.1
 decorator==4.4.2
 flatbuffers==23.5.26

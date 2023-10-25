@@ -10,6 +10,7 @@ from gym import spaces
 
 # from cs285.infrastructure.logger import Logger
 
+import tensorflow
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras.optimizers.legacy import Adam
@@ -55,19 +56,50 @@ def run_training_loop():
     actions = env.action_space.n
 
     model = build_model(obs_shape, actions)
+    '''tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
+        log_dir="data/", 
+        histogram_freq=1,  # How often to log histograms
+        write_graph=True,   # Whether to log the graph
+        write_images=True,  # Whether to log images
+        update_freq='epoch' # Frequency for scalar logs
+    )'''
 
     dqn = build_agent(model, actions)
-    dqn.compile(Adam(lr=5e-3), metrics=['mae'])
-    dqn.fit(env, nb_steps=60000, visualize=False, verbose=1)
+    dqn.compile(Adam(lr=1e-3), metrics=['mae'])
+    dqn.fit(env, nb_steps=5000, visualize=False, verbose=1)
 
-    results = dqn.test(env, nb_episodes=150, visualize=False)
-    print(np.mean(results.history['episode_reward']))
+    #results = dqn.test(env, nb_episodes=5, visualize=False, callbacks=[tensorboard_callback])
+    #print(results.history)
+    log_dir = "data/"
+    summary_writer = tensorflow.summary.create_file_writer(log_dir)
+
+    # Your training or evaluation loop
+    for episode in range(5):
+        state = env.reset()
+        episode_reward = 0
+        done = False
+
+        while not done:
+            # Perform an action and receive the next state and reward
+            action = model(state.reshape(1,-1))
+            next_state, reward, done, info = env.step(action[0])
+            # Log the reward as a custom scalar
+            with summary_writer.as_default():
+                [tf.summary.scalar("bag" + str(i), info["bag" + str(i)], step=global_step) for i in range(4)]
+
+            state = next_state
+            global_step += 1
+    summary_writer.close()
+
+            
 def build_model(states, actions):
     model = Sequential()    
-    model.add(Dense(24, activation='relu', input_shape=(1,states)))
-    model.add(Dense(24, activation='relu'))
+    model.add(Dense(480, activation='relu', input_shape=(1,states)))
+    model.add(Dense(480, activation='relu'))
     model.add(Flatten())
     model.add(Dense(actions, activation='linear'))
     return model
+
+    #other architectures? GNN? CNN? 
 if __name__ == '__main__':
     run_training_loop()
