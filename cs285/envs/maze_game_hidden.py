@@ -160,7 +160,7 @@ class MazeGameEnv(gym.Env):
             reward = -250
             done = True
         elif collect:
-            reward = 0.5 #10?
+            reward = 0 #10?
             done = False
         else:
             reward = -1

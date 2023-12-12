@@ -1,6 +1,7 @@
 import gymnasium as gym
 from gymnasium.wrappers import EnvCompatibility
 from stable_baselines3 import PPO
+import argparse
 
 from cs285.envs.maze_game_hidden import MazeGameEnv
 from cs285.networks.mask import TorchActionMaskModel
@@ -17,22 +18,35 @@ if __name__ == "__main__":
         entry_point = 'cs285.envs.maze_game_hidden:MazeGameEnv'
     )
 
-    load = True
-    if load:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--load", "-l", type=str, required=False)
+    parser.add_argument("--save", "-s", type=str, required=False)
+    parser.add_argument("--rend", "-r", action="store_true")
+
+
+    parser.add_argument("--train", "-t", type=int, default=100000)
+    parser.add_argument("--log_interval", type=int, default=1000)
+    args = parser.parse_args()
+
+    # create directory for logging
+    #logdir_prefix = "hw5_explore_"  # keep for autograder
+
+    #logger = make_logger(logdir_prefix, config)
+
+    ###COMMAND: python scripts/test2.py -l trained_model -s trained_model2  
+    if args.load:
+        name = args.load
         env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human"))
 
-        model = PPO.load("./trained_model", env = env)
+        model = PPO.load(name, env = env) #"./trained_model"
     else:
         env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human"))
         model = PPO("MlpPolicy", env, verbose=1)
-    train = True
-    if train:
-        model.learn(total_timesteps=100000)
-    save = False
-    if save:
-        model.save("./trained_model")
-    rend = False
-    if rend:
+    if args.train:
+        model.learn(total_timesteps=args.train)
+    if args.save:
+        model.save(args.save)
+    if args.rend:
         vec_env = model.get_env()
         obs = vec_env.reset()
         for i in range(1000):
