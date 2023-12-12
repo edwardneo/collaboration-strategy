@@ -8,13 +8,13 @@ BOARD = np.array(
         [-1, 0, 0, 3, -1, -1],
         [0, 0, 0, 1, 1, -1],
         [0, 0, 0, -1, 0, -1],
-        [1, -1, 1, -1, 2, -1],
-        [-1, 0, -1, -1, -1, 2],
-        [-1, 2, 1, 0, -1, -1],
+        [1, -1, 1, 3, 2, -1],
+        [-1, 0, -1, 1, -1, 2],
+        [-1, 2, 1, 0, 3, -1],
     ]
 )
-GOAL = np.array([1, 0, 0, 0])
-PLAYER_POSITION = (4, 2)
+GOAL = np.array([3, 1, 1, 1])
+PLAYER_POSITION = (1,1)
 COLORS = ["red", "blue", "green", "pink"]
 
 WINDOW_SIZE = (600, 600)
@@ -144,7 +144,7 @@ class MazeGameEnv(gym.Env):
                 is_legal = True
 
         # Reward function
-        if np.array_equal(self.bag, self.goal):
+        if np.all(self.bag >= self.goal):
             reward = 500
             done = True
         elif not is_legal:
@@ -159,8 +159,9 @@ class MazeGameEnv(gym.Env):
         if self.curr_steps > self.max_steps:
             done = True
 
-        truncated = False
+        truncated = done
         info = {"action_mask": mask} | {"bag" + str(i): self.bag[i] for i in range(4)}
+
 
         return self._generate_observation(), reward, done, truncated, info
 
@@ -177,7 +178,7 @@ class MazeGameEnv(gym.Env):
             mask[2] = 1
         if col < self.num_cols - 1:
             mask[3] = 1
-        if board[row, col]:
+        if board[row, col] != -1:
             mask[4] = 1
         return mask
 

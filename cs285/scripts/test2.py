@@ -1,6 +1,7 @@
 import gymnasium as gym
 from gymnasium.wrappers import EnvCompatibility
 from stable_baselines3 import PPO
+
 from cs285.envs.maze_game import MazeGameEnv
 from cs285.networks.mask import TorchActionMaskModel
 import warnings
@@ -16,7 +17,7 @@ if __name__ == "__main__":
         entry_point = 'cs285.envs.maze_game:MazeGameEnv'
     )
 
-    env = FlattenObservation(gym.make('CartPole-v0'))
+    env = FlattenObservation(gym.make('MazeGame-v0'))
     model = PPO("MlpPolicy", env, verbose=1)
     model.learn(total_timesteps=10_00000)
 
