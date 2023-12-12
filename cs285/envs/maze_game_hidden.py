@@ -11,6 +11,7 @@ BOARD = np.array(
         [1, -1, 1, 2]
     ]
 )
+
 GOAL = np.array([1, 1, 1])
 PLAYER_POSITION = (1,1)
 COLORS = ["red", "blue", "green"]
@@ -34,6 +35,8 @@ class MazeGameEnv(gym.Env):
 
         self.max_steps = max_steps
         self.curr_steps = 0
+        self.total_steps = 0
+        self.vis_size = 1
 
       
         self.num_rows, self.num_cols = self.board.shape
@@ -58,13 +61,13 @@ class MazeGameEnv(gym.Env):
         # 5 possible actions: 0 = Up, 1 = Down, 2 = Left, 3 = Right, 4 = Collect
         self.action_space = spaces.Discrete(5)
 
-        # Can observe: board, bag, position
+        # Can observe: vision, bag, position
         self.observation_space = spaces.Dict(
             {
-                "board": spaces.Box(
+                "vision": spaces.Box(
                     low=-1,
                     high=self.num_distinct_items - 1,
-                    shape=(self.num_rows, self.num_cols),
+                    shape=(self.vis_size*2 + 1, self.vis_size*2 + 1),
                     dtype=int,
                 ),
                 "bag": spaces.Box(low=0, high=20, shape=(self.num_distinct_items,), dtype=int),
@@ -86,13 +89,18 @@ class MazeGameEnv(gym.Env):
         )
     def set_render_mode(self, mode):
         self.render_mode = mode
+    def random_board(self):
+        flattened = BOARD.flatten()
+        np.random.shuffle(flattened)
+        return flattened.reshape((self.num_rows, self.num_cols))
 
     def reset(self, seed=None, options=None):
         super(MazeGameEnv, self).reset()
         self.curr_steps = 0
 
         self.board = np.array(
-            self.initial_parameters["board"]
+            self.random_board()
+            #self.initial_parameters["board"]
         )  # Maze represented as a 2D NumPy array
         self.pos = np.array(
             self.initial_parameters["pos"]
@@ -146,13 +154,13 @@ class MazeGameEnv(gym.Env):
 
         # Reward function
         if np.all(self.bag >= self.goal):
-            reward = 500
+            reward = 10 #500?
             done = True
         elif not is_legal:
-            reward = -500
-            done = False
+            reward = -250
+            done = True
         elif collect:
-            reward = 10
+            reward = 0.5 #10?
             done = False
         else:
             reward = -1
@@ -184,7 +192,10 @@ class MazeGameEnv(gym.Env):
         return mask
 
     def _generate_observation(self):
-        return {"board": self.board, "bag": self.bag, "pos": self.pos}
+        big_board = np.zeros((self.num_rows+2, self.num_cols+2))
+        big_board[1:-1, 1:-1] = self.board
+        vis = big_board[self.pos[0]:self.pos[0]+3, self.pos[1]: self.pos[1]+3]
+        return {"vision": vis, "bag": self.bag, "pos": self.pos}
 
     def render(self, mode="human"):
         if mode == "ansi":

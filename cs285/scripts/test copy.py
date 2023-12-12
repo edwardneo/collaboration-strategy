@@ -1,6 +1,6 @@
 import gymnasium as gym
 from gymnasium.wrappers import EnvCompatibility
-from cs285.envs.maze_game_hidden import MazeGameEnv
+from cs285.envs.maze_game import MazeGameEnv
 from cs285.networks.mask import TorchActionMaskModel
 import warnings
 from tianshou.data import Collector, VectorReplayBuffer
@@ -22,8 +22,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 if __name__ == "__main__":
     gym.register(
-        id = 'MazeGame-v1',
-        entry_point = 'cs285.envs.maze_game_hidden:MazeGameEnv'
+        id = 'MazeGame-v0',
+        entry_point = 'cs285.envs.maze_game:MazeGameEnv'
     )
 
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     logger = TensorboardLogger(writer)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human"))
+    env = FlattenObservation(gym.make('MazeGame-v0', render_mode = 'human'))
     train_envs = DummyVectorEnv([lambda: env for _ in range(1)])
     test_envs = DummyVectorEnv([lambda: env for _ in range(1)])
     # model & optimizer
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         policy,
         train_collector,
         test_collector,
-        max_epoch=10,
+        max_epoch=2,
         step_per_epoch=50000,
         repeat_per_collect=10,
         episode_per_test=10,
