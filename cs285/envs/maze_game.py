@@ -1,6 +1,6 @@
-import gym
-from gym import spaces
-from gym.error import DependencyNotInstalled
+import gymnasium as gym
+from gymnasium import spaces
+from gymnasium.error import DependencyNotInstalled
 import numpy as np
 
 BOARD = np.array(
@@ -14,7 +14,7 @@ BOARD = np.array(
     ]
 )
 GOAL = np.array([1, 0, 0, 0])
-PLAYER_POSITION = np.array([0, 0])
+PLAYER_POSITION = (0, 0)
 COLORS = ["red", "blue", "green", "pink"]
 
 WINDOW_SIZE = (600, 600)
@@ -23,7 +23,7 @@ WINDOW_SIZE = (600, 600)
 class MazeGameEnv(gym.Env):
     metadata = {"render_modes": [None, "human", "ansi", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None):
+    def __init__(self, env_config, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None):
         super(MazeGameEnv, self).__init__()
 
         # Save initial parameters
@@ -32,7 +32,11 @@ class MazeGameEnv(gym.Env):
         # Initialize env parameters
         self.board = np.array(board)  # Maze represented as a 2D NumPy array
         self.goal = np.array(goal)  # Goal represented as a 1D NumPy array
-        self.pos = np.array(pos)  # Starting position is current posiiton of agent
+        self.pos = (pos[0], pos[1])  # Starting position is current posiiton of agent
+
+        print('Board', type(self.board))
+        print('Board', self.board.shape)
+        print('Board', board)
 
         self.num_rows, self.num_cols = self.board.shape
         self.num_distinct_items = np.max(self.board) + 1
@@ -65,14 +69,14 @@ class MazeGameEnv(gym.Env):
                     shape=(self.num_rows, self.num_cols),
                     dtype=int,
                 ),
-                "bag": spaces.Box(low=0, high=20, shape=(self.num_distinct_items,)),
+                "bag": spaces.Box(low=0, high=20, shape=(self.num_distinct_items,), dtype=int),
                 "pos": spaces.Tuple(
                     (spaces.Discrete(self.num_rows), spaces.Discrete(self.num_cols))
                 ),
             }
         )
 
-        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        assert render_mode is None or render_mode in self.metadata["render_modes"], f"{render_mode} is not a valid render mode"
         self.render_mode = render_mode
 
         # Pygame
@@ -83,7 +87,7 @@ class MazeGameEnv(gym.Env):
             WINDOW_SIZE[1] / self.num_cols,
         )
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
         super(MazeGameEnv, self).reset()
 
         self.board = np.array(
@@ -96,7 +100,7 @@ class MazeGameEnv(gym.Env):
             [0] * self.num_distinct_items
         )  # Bag represented as a 1D NumPy array
 
-        return self._generate_observation()
+        return self._generate_observation(), {}
 
     def step(self, action):
         is_legal = False
@@ -107,27 +111,29 @@ class MazeGameEnv(gym.Env):
 
         # Move the agent based on the selected action
         new_board = np.array(self.board)
-        new_pos = np.array(self.pos)
+        new_r, new_c = self.pos
         new_bag = np.array(self.bag)
 
         if 0 <= action <= 3:
             if action == 0:  # Up
-                new_pos[0] = max(self.pos[0], 0)
+                new_r = max(self.pos[0], 0)
             elif action == 1:  # Down
-                new_pos[0] = max(self.pos[0], self.num_rows - 1)
+                new_r = max(self.pos[0], self.num_rows - 1)
             elif action == 2:  # Left
-                new_pos[1] = max(self.pos[1], 0)
+                new_c = max(self.pos[1], 0)
             elif action == 3:  # Right
-                new_pos[1] = max(self.pos[1], self.num_cols - 1)
+                new_c = max(self.pos[1], self.num_cols - 1)
 
-            is_legal = not np.array_equal(self.pos, new_pos)
+            is_legal = self.pos[0] != new_r or self.pos[1] != new_c
+
+            self.pos = (new_r, new_c)
 
         elif action == 4:
-            item = new_board[new_pos[0], new_pos[1]]
+            item = new_board[new_r, new_c]
 
             if 0 <= item < self.num_distinct_items:
                 new_bag[item] += 1
-                new_board[new_pos[0], new_pos[1]] = -1
+                new_board[new_r, new_c] = -1
 
                 self.bag = new_bag
                 self.board = new_board
@@ -149,9 +155,10 @@ class MazeGameEnv(gym.Env):
             reward = -1
             done = False
 
+        truncated = False
         info = {"action_mask": mask} | {"bag" + str(i): self.bag[i] for i in range(4)}
 
-        return self._generate_observation(), reward, done, info
+        return self._generate_observation(), reward, done, truncated, info
 
     def valid_mask(self, curr_pos, board):
         row, col = curr_pos
@@ -160,11 +167,11 @@ class MazeGameEnv(gym.Env):
         # If agent goes out of the grid
         if row > 0:
             mask[0] = 1
-        if row < self.max_row:
+        if row < self.num_rows - 1:
             mask[1] = 1
         if col > 0:
             mask[2] = 1
-        if col < self.max_col:
+        if col < self.num_cols - 1:
             mask[3] = 1
         if board[row, col]:
             mask[4] = 1

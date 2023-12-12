@@ -1,4 +1,5 @@
-import gym
+import gymnasium as gym
+from gymnasium.wrappers import EnvCompatibility
 from ray.rllib.algorithms.ppo import PPOConfig
 from cs285.envs.maze_game import MazeGameEnv
 
@@ -12,8 +13,8 @@ if __name__ == "__main__":
     # env = gym.make('MazeGame-v0')
     config = (  # 1. Configure the algorithm,
         PPOConfig()
-        .environment(MazeGameEnv)
         .rollouts(num_rollout_workers=2)
+        .environment(MazeGameEnv)
         .framework("torch")
         .training(model={"fcnet_hiddens": [64, 64]})
         .evaluation(evaluation_num_workers=1)
