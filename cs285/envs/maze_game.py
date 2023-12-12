@@ -13,7 +13,7 @@ BOARD = np.array(
         [-1, 2, 1, 0, 3, -1],
     ]
 )
-GOAL = np.array([3, 1, 1, 1])
+GOAL = np.array([1, 0, 0, 0])
 PLAYER_POSITION = (1,1)
 COLORS = ["red", "blue", "green", "pink"]
 
@@ -23,7 +23,7 @@ WINDOW_SIZE = (600, 600)
 class MazeGameEnv(gym.Env):
     metadata = {"render_modes": [ "human", "ansi", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None, max_steps = 75):
+    def __init__(self, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None, max_steps = 5):
         super(MazeGameEnv, self).__init__()
 
         # Save initial parameters
@@ -149,6 +149,7 @@ class MazeGameEnv(gym.Env):
             done = True
         elif not is_legal:
             reward = -250
+            print(action)
             done = False
         elif collect:
             reward = 10
