@@ -14,16 +14,16 @@ BOARD = np.array(
     ]
 )
 GOAL = np.array([1, 0, 0, 0])
-PLAYER_POSITION = (0, 0)
+PLAYER_POSITION = (4, 2)
 COLORS = ["red", "blue", "green", "pink"]
 
 WINDOW_SIZE = (600, 600)
 
 
 class MazeGameEnv(gym.Env):
-    metadata = {"render_modes": [None, "human", "ansi", "rgb_array"], "render_fps": 4}
+    metadata = {"render_modes": [ "human", "ansi", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, env_config, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None):
+    def __init__(self, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None, max_steps = 75):
         super(MazeGameEnv, self).__init__()
 
         # Save initial parameters
@@ -34,10 +34,10 @@ class MazeGameEnv(gym.Env):
         self.goal = np.array(goal)  # Goal represented as a 1D NumPy array
         self.pos = (pos[0], pos[1])  # Starting position is current posiiton of agent
 
-        print('Board', type(self.board))
-        print('Board', self.board.shape)
-        print('Board', board)
+        self.max_steps = max_steps
+        self.curr_steps = 0
 
+      
         self.num_rows, self.num_cols = self.board.shape
         self.num_distinct_items = np.max(self.board) + 1
         self.total_colors = np.array(
@@ -89,6 +89,7 @@ class MazeGameEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         super(MazeGameEnv, self).reset()
+        self.curr_steps = 0
 
         self.board = np.array(
             self.initial_parameters["board"]
@@ -103,6 +104,7 @@ class MazeGameEnv(gym.Env):
         return self._generate_observation(), {}
 
     def step(self, action):
+        self.curr_steps += 1
         is_legal = False
         collect = False
 
@@ -154,6 +156,8 @@ class MazeGameEnv(gym.Env):
         else:
             reward = -1
             done = False
+        if self.curr_steps > self.max_steps:
+            done = True
 
         truncated = False
         info = {"action_mask": mask} | {"bag" + str(i): self.bag[i] for i in range(4)}

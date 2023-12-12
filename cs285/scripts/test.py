@@ -1,14 +1,21 @@
 import gymnasium as gym
 from gymnasium.wrappers import EnvCompatibility
+from ray.rllib.models import ModelCatalog
 from ray.rllib.algorithms.ppo import PPOConfig
 from cs285.envs.maze_game import MazeGameEnv
+from cs285.networks.mask import TorchActionMaskModel
+import warnings
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 
 if __name__ == "__main__":
     gym.register(
         id = 'MazeGame-v0',
-        entry_point = 'cs285.envs.maze_game:MazeGameEnv',
-        max_episode_steps=75,
+        entry_point = 'cs285.envs.maze_game:MazeGameEnv'
     )
+
+    ModelCatalog.register_custom_model("mask_model", TorchActionMaskModel)
 
     # env = gym.make('MazeGame-v0')
     config = (  # 1. Configure the algorithm,
@@ -22,7 +29,8 @@ if __name__ == "__main__":
 
     algo = config.build()  # 2. build the algorithm,
 
-    for _ in range(5):
-        print(algo.train())  # 3. train it,
+    for i in range(3):
+        print(f'''\n iteration {i}: ''' + str(algo.train()) + "\n")  # 3. train it,
 
-    algo.evaluate()  # 4. and evaluate it.
+    evaluation_results = algo.evaluate()  # 4. and evaluate it.
+    print("Evaluation Results:", evaluation_results)
