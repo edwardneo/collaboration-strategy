@@ -4,7 +4,7 @@ from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 import argparse
 
-from cs285.envs.maze_game_hidden import MazeGameEnv
+from cs285.envs.maze_game_simple import MazeGameEnv
 import warnings
 from gymnasium.wrappers import FlattenObservation
 from sb3_contrib.common.maskable.evaluation import evaluate_policy
@@ -39,8 +39,7 @@ if __name__ == "__main__":
 
     ### line 145 in ppo_mask.py: self.policy = MaskableActorCriticPolicy( ...
     ###COMMAND1: python scripts/test2.py -s trained_model -f -t 100000
-    ###COMMAND2: python scripts/test2.py -l trained_model -s trained_model2 -t 100000
-    ###COMMAND3: python scripts/test2.py -l trained_model2  -t 0 -e 0 -r 
+
     if args.load:
         name = args.load
         env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = args.fresh))

@@ -2,7 +2,7 @@ import gymnasium as gym
 from gymnasium.wrappers import EnvCompatibility
 import argparse
 
-from cs285.envs.maze_game_two_player import MazeGameEnvTwoPlayer
+from cs285.envs.maze_game_toy import MazeGameEnvTwoPlayer
 import warnings
 from gymnasium.wrappers import FlattenObservation
 from sb3_contrib.common.maskable.evaluation import evaluate_policy
@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 if __name__ == "__main__":
     gym.register(
         id = 'MazeGame-v2',
-        entry_point = 'cs285.envs.maze_game_two_player:MazeGameEnvTwoPlayer'
+        entry_point = 'cs285.envs.maze_game_toy:MazeGameEnvTwoPlayer'
     )
 
     parser = argparse.ArgumentParser()
@@ -40,12 +40,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    ### COMMAND0: python scripts/test3.py -p2 trained_model2 -s trained_model_p1 -enc -f -t 10000
-    ### COMMAND1: python scripts/test3.py -p2 trained_model_p1 -l trained_model_p1 -s trained_model_p1 -enc -f -t 30000
-    ### COMMAND2: python scripts/test3.py -p2 trained_model_p1 -l trained_model_p1 -s trained_model_p2 -enc -t 30000
-    ### COMMAND3: python scripts/test3.py -p2 trained_model_p2 -l trained_model_p2 -s trained_model_p2 -t 10000 -ep 5
-    ### run COMMAND3 multiple times
-    ### python scripts/test3.py -l trained_model_p2 -p2 trained_model2  -t 0 -e 0 -r 
+    ### COMMAND0: python scripts/test4.py -p2 trained_model -s trained_model_p1 -t 50000
+    ### python scripts/test4.py -l trained_model_p1 -p2 trained_model  -t 0 -e 0 -r 
     ###how to motivate communication and speed? maybe the goals have to be different? idk
     for _ in range(args.epochs):
         if args.load:

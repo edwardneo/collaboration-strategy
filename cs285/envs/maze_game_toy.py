@@ -81,6 +81,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.bag_estimate = np.array(
             [0] * self.num_distinct_items
         ) 
+        self.sim_activate = False
 
         # 6 possible actions: 0 = Up, 1 = Down, 2 = Left, 3 = Right, 4 = Collect, 5 = Information
         self.action_space = spaces.Discrete(6)
@@ -116,9 +117,8 @@ class MazeGameEnvTwoPlayer(gym.Env):
     def set_render_mode(self, mode):
         self.render_mode = mode
     def random_board(self):
-        flattened = BOARD.flatten()
-        np.random.shuffle(flattened)
-        return flattened.reshape((self.num_rows, self.num_cols))
+        
+        return BOARD
 
     def reset(self, seed=None, options=None):
         super(MazeGameEnvTwoPlayer, self).reset()
@@ -140,6 +140,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.bag = np.array(
             [0] * self.num_distinct_items
         )  # Bag represented as a 1D NumPy array
+        self.sim_activate = False
 
         self.sim_agent = MaskablePPO.load(self.save_file)
         self.sim_pos = np.array(
@@ -219,11 +220,9 @@ class MazeGameEnvTwoPlayer(gym.Env):
             reward = -250
             done = True
         if action == 5:
-            self.sim_bag_estimate = self.sim_bag
-            if self.encourage:
-                reward += 0.2 + 2*self.fresh_start
+            self.sim_activate = True           
         
-        if not done:
+        if (not done) and self.sim_activate:
             sim_obs = self._generate_observation(self.sim_pos, self.pos, self.sim_bag, self.bag_estimate)
             action_masks = self.valid_mask(self.sim_pos, self.board)
             sim_ac, _states = self.sim_agent.predict(spaces.utils.flatten(self.observation_space, sim_obs), action_masks=action_masks)
@@ -254,7 +253,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
             mask[3] = 1
         if board[row, col] != -1:
             mask[4] = 1
-        mask[5] = 1
+        mask[5] = not self.sim_activate
         return mask
 
     def _generate_observation(self, pos, other_pos, bag, other_bag):

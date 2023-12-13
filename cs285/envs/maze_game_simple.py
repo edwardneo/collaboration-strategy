@@ -2,8 +2,18 @@ import gymnasium as gym
 from gymnasium import spaces
 from gymnasium.error import DependencyNotInstalled
 import numpy as np
-from sb3_contrib import MaskablePPO
+'''
+BOARD = np.array(
+    [
+        [-1, 0, 0, 2],
+        [0, 0, 1, 1],
+        [0, 2, 0, -1],
+        [1, -1, 1, 2]
+    ]
+)
 
+GOAL = np.array([1, 1, 1])
+PLAYER_POSITION = (1,1)'''
 
 BOARD = np.array(
     [
@@ -17,28 +27,25 @@ BOARD = np.array(
 
 GOAL = np.array([3, 2, 1])
 PLAYER_POSITION = (0,0)
-SIM_PLAYER_POSITION = (3, 3)
+
 COLORS = ["red", "blue", "green"]
 
 WINDOW_SIZE = (600, 600)
 
 
-class MazeGameEnvTwoPlayer(gym.Env):
+class MazeGameEnv(gym.Env):
     metadata = {"render_modes": [ "human", "ansi", "rgb_array"], "render_fps": 1}
 
-    def __init__(self, save_file, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, sim_pos=SIM_PLAYER_POSITION, render_mode=None, max_steps = 40, fresh_start = True, encourage = False):
-        super(MazeGameEnvTwoPlayer, self).__init__()
+    def __init__(self, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None, max_steps = 40, fresh_start = True):
+        super(MazeGameEnv, self).__init__()
 
         # Save initial parameters
-        self.initial_parameters = {"pos": pos, "sim_pos": sim_pos}
+        self.initial_parameters = {"board": board, "pos": pos}
 
         # Initialize env parameters
         self.board = np.array(board)  # Maze represented as a 2D NumPy array
         self.goal = np.array(goal)  # Goal represented as a 1D NumPy array
         self.pos = (pos[0], pos[1])  # Starting position is current posiiton of agent
-
-        self.encourage = encourage
-
 
         self.max_steps = max_steps
         self.curr_steps = 0
@@ -46,6 +53,8 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.vis_size = 1
 
         self.fresh_start = fresh_start
+
+
       
         self.num_rows, self.num_cols = self.board.shape
         self.num_distinct_items = np.max(self.board) + 1
@@ -56,11 +65,6 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.bag = np.array(
             [0] * self.num_distinct_items
         )  # Bag represented as a 1D NumPy array
-        self.sim_bag_estimate = self.bag = np.array(
-            [0] * self.num_distinct_items
-        ) 
-
-
 
         # Assertion checks
         assert (
@@ -71,18 +75,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
         ), f"Not enough colors in {COLORS}: need at least {self.num_distinct_items}"
         assert self.goal.shape == self.bag.shape
 
-        # Simulated agent
-        self.save_file = save_file
-        self.sim_agent = MaskablePPO.load(self.save_file)
-        self.sim_pos = sim_pos
-        self.sim_bag = np.array(
-            [0] * self.num_distinct_items
-        )  # Bag represented as a 1D NumPy array
-        self.bag_estimate = np.array(
-            [0] * self.num_distinct_items
-        ) 
-
-        # 6 possible actions: 0 = Up, 1 = Down, 2 = Left, 3 = Right, 4 = Collect, 5 = Information
+        # 5 possible actions: 0 = Up, 1 = Down, 2 = Left, 3 = Right, 4 = Collect, 5 = Information
         self.action_space = spaces.Discrete(6)
 
         # Can observe: vision, bag, position
@@ -111,17 +104,13 @@ class MazeGameEnvTwoPlayer(gym.Env):
             WINDOW_SIZE[0] / self.num_rows,
             WINDOW_SIZE[1] / self.num_cols,
         )
-        self.even_timestep = True
-
     def set_render_mode(self, mode):
         self.render_mode = mode
     def random_board(self):
-        flattened = BOARD.flatten()
-        np.random.shuffle(flattened)
-        return flattened.reshape((self.num_rows, self.num_cols))
+        return BOARD
 
     def reset(self, seed=None, options=None):
-        super(MazeGameEnvTwoPlayer, self).reset()
+        super(MazeGameEnv, self).reset()
         self.curr_steps = 0
 
         self.board = np.array(
@@ -131,49 +120,38 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.pos = np.array(
             self.initial_parameters["pos"]
         )  # Starting position is current posiiton of agent
-        self.sim_bag_estimate = self.bag = np.array(
-            [0] * self.num_distinct_items
-        ) 
-        self.bag_estimate = np.array(
-            [0] * self.num_distinct_items
-        ) 
         self.bag = np.array(
             [0] * self.num_distinct_items
         )  # Bag represented as a 1D NumPy array
 
-        self.sim_agent = MaskablePPO.load(self.save_file)
-        self.sim_pos = np.array(
-            self.initial_parameters["sim_pos"]
-        )  # Starting position is current posiiton of simulated agent
-        self.sim_bag = np.array(
-            [0] * self.num_distinct_items
-        )  # Bag represented as a 1D NumPy array
-        self.even_timestep = True
+        return self._generate_observation(), {}
 
-        return self._generate_observation(self.pos, self.sim_pos, self.bag, self.sim_bag_estimate), {}
-    
-    def _update(self, pos, bag, action):
+    def step(self, action):
+        self.curr_steps += 1
         is_legal = False
         collect = False
 
+        # Action mask
+        mask = self.valid_mask(self.pos, self.board)
+
         # Move the agent based on the selected action
         new_board = np.array(self.board)
-        new_r, new_c = pos
-        new_bag = np.array(bag)
+        new_r, new_c = self.pos
+        new_bag = np.array(self.bag)
 
         if 0 <= action <= 3:
             if action == 0:  # Up
-                new_r = max(pos[0]-1, 0)
+                new_r = max(self.pos[0]-1, 0)
             elif action == 1:  # Down
-                new_r = min(pos[0] + 1, self.num_rows - 1)
+                new_r = min(self.pos[0] + 1, self.num_rows - 1)
             elif action == 2:  # Left
-                new_c = max(pos[1]-1, 0)
+                new_c = max(self.pos[1]-1, 0)
             elif action == 3:  # Right
-                new_c = min(pos[1]+1, self.num_cols - 1)
+                new_c = min(self.pos[1]+1, self.num_cols - 1)
 
-            is_legal = pos[0] != new_r or pos[1] != new_c
+            is_legal = self.pos[0] != new_r or self.pos[1] != new_c
 
-            # self.pos = (new_r, new_c)
+            self.pos = (new_r, new_c)
 
         elif action == 4:
             item = new_board[new_r, new_c]
@@ -182,25 +160,18 @@ class MazeGameEnvTwoPlayer(gym.Env):
                 new_bag[item] += 1
                 new_board[new_r, new_c] = -1
 
-                collect = self.bag[item] + self.sim_bag_estimate[item] < self.goal[item]
+                collect = self.bag[item] < self.goal[item]
 
-                # self.bag = new_bag
-                # self.board = new_board
+                self.bag = new_bag
+                self.board = new_board
                 
                 is_legal = True
         elif action == 5:
             is_legal = True
-        
-        return new_board, (new_r, new_c), new_bag, is_legal, collect
-
-    def step(self, action):
-        self.curr_steps += 1
-        
-        self.board, self.pos, self.bag, is_legal, collect = self._update(self.pos, self.bag, action)
 
         # Reward function
-        if np.all(self.bag + self.sim_bag >= self.goal):
-            reward = 0 
+        if np.all(self.bag >= self.goal):
+            reward = 0
             if self.fresh_start:
                 reward = 500
             done = True
@@ -208,7 +179,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
             reward = -250
             done = True
         elif collect:
-            reward = -0.9 #-0.9?
+            reward = -0.9 #-0.9 or -1??
             if self.fresh_start:
                 reward = 10
             done = False
@@ -218,26 +189,12 @@ class MazeGameEnvTwoPlayer(gym.Env):
         if self.curr_steps > self.max_steps:
             reward = -250
             done = True
-        if action == 5:
-            self.sim_bag_estimate = self.sim_bag
-            if self.encourage:
-                reward += 0.2 + 2*self.fresh_start
-        
-        if not done:
-            sim_obs = self._generate_observation(self.sim_pos, self.pos, self.sim_bag, self.bag_estimate)
-            action_masks = self.valid_mask(self.sim_pos, self.board)
-            sim_ac, _states = self.sim_agent.predict(spaces.utils.flatten(self.observation_space, sim_obs), action_masks=action_masks)
-            if sim_ac == 5:
-                self.bag_estimate = self.bag
-            self.board, self.sim_pos, self.sim_bag, _, _ = self._update(self.sim_pos, self.sim_bag, sim_ac)
-
-        # Action mask
-        mask = self.valid_mask(self.pos, self.board)
 
         truncated = done
         info = {"action_mask": mask} | {"bag" + str(i): self.bag[i] for i in range(self.num_distinct_items)}
 
-        return self._generate_observation(self.pos, self.sim_pos, self.bag, self.sim_bag_estimate), reward, done, truncated, info
+
+        return self._generate_observation(), reward, done, truncated, info
 
     def valid_mask(self, curr_pos, board):
         row, col = curr_pos
@@ -254,15 +211,13 @@ class MazeGameEnvTwoPlayer(gym.Env):
             mask[3] = 1
         if board[row, col] != -1:
             mask[4] = 1
-        mask[5] = 1
         return mask
 
-    def _generate_observation(self, pos, other_pos, bag, other_bag):
+    def _generate_observation(self):
         big_board = np.zeros((self.num_rows+2, self.num_cols+2))
         big_board[1:-1, 1:-1] = self.board
-        big_board[1 + other_pos[0], 1 + other_pos[1]] = -2 
-        vis = big_board[pos[0]:pos[0]+3, pos[1]: pos[1]+3]
-        return {"vision": vis, "bag": bag + other_bag, "pos": pos}
+        vis = big_board[self.pos[0]:self.pos[0]+3, self.pos[1]: self.pos[1]+3]
+        return {"vision": vis, "bag": self.bag, "pos": self.pos}
 
     def render(self, mode="human"):
         if mode == "ansi":
@@ -306,38 +261,12 @@ class MazeGameEnvTwoPlayer(gym.Env):
                     )
 
                 if np.array_equal(np.array(self.pos), np.array([row, col])):  # Agent
-                    if self.even_timestep:
-                        pygame.draw.circle(
-                            self.window,
-                            pygame.Color("black"),
-                            (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
-                            30
-                        )
-                    else:
-                        pygame.draw.circle(
-                            self.window,
-                            pygame.Color("black"),
-                            (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
-                            30,
-                            width=5
-                        )
-                
-                if np.array_equal(np.array(self.sim_pos), np.array([row, col])):  # Simulated Agent
-                    if self.even_timestep:
-                        pygame.draw.circle(
-                            self.window,
-                            pygame.Color("grey"),
-                            (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
-                            20
-                        )
-                    else:
-                        pygame.draw.circle(
-                            self.window,
-                            pygame.Color("grey"),
-                            (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
-                            20,
-                            width=5
-                        )
+                    pygame.draw.circle(
+                        self.window,
+                        pygame.Color("black"),
+                        (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
+                        30
+                    )
         
         # Draw grid lines
         for row in range(0, self.num_rows + 1):
@@ -357,9 +286,6 @@ class MazeGameEnvTwoPlayer(gym.Env):
                 (col * self.cell_size[0], WINDOW_SIZE[1]),
                 width=2
             )
-        
-        # Flip timestep boolean
-        self.even_timestep = not self.even_timestep
 
         if mode == "human":
             pygame.display.update()
