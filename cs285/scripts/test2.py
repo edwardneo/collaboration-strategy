@@ -30,9 +30,10 @@ if __name__ == "__main__":
     parser.add_argument("--train", "-t", type=int, default=100000)
     parser.add_argument("--eval", "-e", type=int, default=100)
 
-    parser.add_argument("--log_interval", type=int, default=1000)
     parser.add_argument("--logdir", type=str, default="./logs")
     parser.add_argument("--train_name", type=str, default="training")
+    parser.add_argument("--fresh", "-f", action="store_true")
+
     args = parser.parse_args()
 
 
@@ -42,16 +43,16 @@ if __name__ == "__main__":
 
     #logger = make_logger(logdir_prefix, config)
 
-    ###COMMAND1: python scripts/test2.py -s trained_model
-    ###COMMAND2: python scripts/test2.py -l trained_model -s trained_model2 
+    ###COMMAND1: python scripts/test2.py -s trained_model -f -t 500000
+    ###COMMAND2: python scripts/test2.py -l trained_model -s trained_model2 -t 300000
     ###COMMAND3: python scripts/test2.py -l trained_model2  -t 0 -e 0 -r 
     if args.load:
         name = args.load
-        env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = False))
+        env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = args.fresh))
 
         model = PPO.load(name, env = env, tensorboard_log=args.logdir) #"./trained_model"
     else:
-        env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = True))
+        env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = args.fresh))
         model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=args.logdir)
     if args.train:
         model.learn(total_timesteps=args.train,  tb_log_name=args.train_name)

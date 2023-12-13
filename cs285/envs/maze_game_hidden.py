@@ -36,7 +36,7 @@ WINDOW_SIZE = (600, 600)
 class MazeGameEnv(gym.Env):
     metadata = {"render_modes": [ "human", "ansi", "rgb_array"], "render_fps": 1}
 
-    def __init__(self, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None, max_steps = 20, fresh_start = True):
+    def __init__(self, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None, max_steps = 40, fresh_start = True):
         super(MazeGameEnv, self).__init__()
 
         # Save initial parameters

@@ -25,7 +25,7 @@ WINDOW_SIZE = (600, 600)
 class MazeGameEnvTwoPlayer(gym.Env):
     metadata = {"render_modes": [ "human", "ansi", "rgb_array"], "render_fps": 1}
 
-    def __init__(self, save_file, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, sim_pos=SIM_PLAYER_POSITION, render_mode=None, max_steps = 20, fresh_start = True):
+    def __init__(self, save_file, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, sim_pos=SIM_PLAYER_POSITION, render_mode=None, max_steps = 40, fresh_start = True):
         super(MazeGameEnvTwoPlayer, self).__init__()
 
         # Save initial parameters
@@ -35,6 +35,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.board = np.array(board)  # Maze represented as a 2D NumPy array
         self.goal = np.array(goal)  # Goal represented as a 1D NumPy array
         self.pos = (pos[0], pos[1])  # Starting position is current posiiton of agent
+
 
         self.max_steps = max_steps
         self.curr_steps = 0
@@ -52,6 +53,11 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.bag = np.array(
             [0] * self.num_distinct_items
         )  # Bag represented as a 1D NumPy array
+        self.sim_bag_estimate = self.bag = np.array(
+            [0] * self.num_distinct_items
+        ) 
+
+
 
         # Assertion checks
         assert (
@@ -69,9 +75,12 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.sim_bag = np.array(
             [0] * self.num_distinct_items
         )  # Bag represented as a 1D NumPy array
+        self.bag_estimate = np.array(
+            [0] * self.num_distinct_items
+        ) 
 
-        # 5 possible actions: 0 = Up, 1 = Down, 2 = Left, 3 = Right, 4 = Collect
-        self.action_space = spaces.Discrete(5)
+        # 5 possible actions: 0 = Up, 1 = Down, 2 = Left, 3 = Right, 4 = Collect, 5 = Information
+        self.action_space = spaces.Discrete(6)
 
         # Can observe: vision, bag, position
         self.observation_space = spaces.Dict(
@@ -117,6 +126,12 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.pos = np.array(
             self.initial_parameters["pos"]
         )  # Starting position is current posiiton of agent
+        self.sim_bag_estimate = self.bag = np.array(
+            [0] * self.num_distinct_items
+        ) 
+        self.bag_estimate = np.array(
+            [0] * self.num_distinct_items
+        ) 
         self.bag = np.array(
             [0] * self.num_distinct_items
         )  # Bag represented as a 1D NumPy array
@@ -129,7 +144,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
             [0] * self.num_distinct_items
         )  # Bag represented as a 1D NumPy array
 
-        return self._generate_observation(self.pos, self.bag), {}
+        return self._generate_observation(self.pos, self.bag, self.sim_bag_estimate), {}
     
     def _update(self, pos, bag, action):
         is_legal = False
@@ -167,6 +182,8 @@ class MazeGameEnvTwoPlayer(gym.Env):
                 # self.board = new_board
                 
                 is_legal = True
+        elif action == 5:
+            is_legal = True
         
         return new_board, (new_r, new_c), new_bag, is_legal, collect
 
@@ -174,6 +191,8 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.curr_steps += 1
         
         self.board, self.pos, self.bag, is_legal, collect = self._update(self.pos, self.bag, action)
+        if action == 5:
+            self.sim_bag_estimate = self.sim_bag
 
         # Reward function
         if np.all(self.bag + self.sim_bag >= self.goal):
@@ -196,9 +215,11 @@ class MazeGameEnvTwoPlayer(gym.Env):
             done = True
         
         if not done:
-            sim_obs = self._generate_observation(self.sim_pos, self.sim_bag)
-            sim_ac = self.sim_agent.predict(spaces.utils.flatten(self.observation_space, sim_obs)) 
-            self.board, self.sim_pos, self.sim_bag, _, _ = self._update(self.sim_pos, self.sim_bag, sim_ac[0])
+            sim_obs = self._generate_observation(self.sim_pos, self.sim_bag, self.bag_estimate)
+            sim_ac = self.sim_agent.predict(spaces.utils.flatten(self.observation_space, sim_obs))[0]
+            if sim_ac == 5:
+                self.bag_estimate = self.bag
+            self.board, self.sim_pos, self.sim_bag, _, _ = self._update(self.sim_pos, self.sim_bag, sim_ac)
 
         # Action mask
         mask = self.valid_mask(self.pos, self.board)
@@ -206,7 +227,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
         truncated = done
         info = {"action_mask": mask} | {"bag" + str(i): self.bag[i] for i in range(self.num_distinct_items)}
 
-        return self._generate_observation(self.pos, self.bag), reward, done, truncated, info
+        return self._generate_observation(self.pos, self.bag, self.sim_bag_estimate), reward, done, truncated, info
 
     def valid_mask(self, curr_pos, board):
         row, col = curr_pos
@@ -225,11 +246,11 @@ class MazeGameEnvTwoPlayer(gym.Env):
             mask[4] = 1
         return mask
 
-    def _generate_observation(self, pos, bag):
+    def _generate_observation(self, pos, bag, other_bag):
         big_board = np.zeros((self.num_rows+2, self.num_cols+2))
         big_board[1:-1, 1:-1] = self.board
         vis = big_board[pos[0]:pos[0]+3, pos[1]: pos[1]+3]
-        return {"vision": vis, "bag": bag, "pos": pos}
+        return {"vision": vis, "bag": bag + other_bag, "pos": pos}
 
     def render(self, mode="human"):
         if mode == "ansi":
