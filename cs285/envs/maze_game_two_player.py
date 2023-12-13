@@ -300,6 +300,14 @@ class MazeGameEnvTwoPlayer(gym.Env):
                         (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
                         30
                     )
+                
+                if np.array_equal(np.array(self.sim_pos), np.array([row, col])):  # Simulated Agent
+                    pygame.draw.circle(
+                        self.window,
+                        pygame.Color("grey"),
+                        (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
+                        20
+                    )
         
         # Draw grid lines
         for row in range(0, self.num_rows + 1):

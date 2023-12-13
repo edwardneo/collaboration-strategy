@@ -1,6 +1,8 @@
 import gymnasium as gym
 from gymnasium.wrappers import EnvCompatibility
 from stable_baselines3 import PPO
+from sb3_contrib import MaskablePPO
+from sb3_contrib.common.wrappers import ActionMasker
 import argparse
 
 from cs285.envs.maze_game_hidden import MazeGameEnv
@@ -49,11 +51,13 @@ if __name__ == "__main__":
     if args.load:
         name = args.load
         env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = args.fresh))
-
-        model = PPO.load(name, env = env, tensorboard_log=args.logdir) #"./trained_model"
+        env = ActionMasker(env, lambda env: env.valid_mask(env.pos, env.board))
+        model = MaskablePPO.load(name, env = env, tensorboard_log=args.logdir) #"./trained_model"
     else:
         env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = args.fresh))
-        model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=args.logdir)
+        env = ActionMasker(env, lambda env: env.valid_mask(env.pos, env.board))
+        model = MaskablePPO("MlpPolicy", env, verbose=1, tensorboard_log=args.logdir)
+
     if args.train:
         model.learn(total_timesteps=args.train,  tb_log_name=args.train_name)
     if args.save:
@@ -70,6 +74,6 @@ if __name__ == "__main__":
         for i in range(1000):
             action, _states = model.predict(obs, deterministic=True)
             obs, reward, done, info = vec_env.step(action)
-            vec_env.render()    
+            vec_env.render()
 
     env.close()
