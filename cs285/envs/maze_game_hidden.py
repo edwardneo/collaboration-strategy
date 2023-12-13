@@ -17,11 +17,11 @@ PLAYER_POSITION = (1,1)'''
 
 BOARD = np.array(
     [
-        [-1, 0, 0, 2],
-        [0, 0, 1, 1],
-        [0, 2, 0, -1],
-        [1, -1, 1, 2],
-         [-1, 0, 2, 2]
+        [-1, 0, 0, 2, 0],
+        [0, 0, 1, 1, 0],
+        [0, 2, 0, -1, 1],
+        [1, -1, 1, 2, 1],
+         [-1, 0, 2, 2, 2]
     ]
 )
 
@@ -75,8 +75,8 @@ class MazeGameEnv(gym.Env):
         ), f"Not enough colors in {COLORS}: need at least {self.num_distinct_items}"
         assert self.goal.shape == self.bag.shape
 
-        # 5 possible actions: 0 = Up, 1 = Down, 2 = Left, 3 = Right, 4 = Collect
-        self.action_space = spaces.Discrete(5)
+        # 5 possible actions: 0 = Up, 1 = Down, 2 = Left, 3 = Right, 4 = Collect, 5 = Information
+        self.action_space = spaces.Discrete(6)
 
         # Can observe: vision, bag, position
         self.observation_space = spaces.Dict(
@@ -168,10 +168,12 @@ class MazeGameEnv(gym.Env):
                 self.board = new_board
                 
                 is_legal = True
+        elif action == 5:
+            is_legal = True
 
         # Reward function
         if np.all(self.bag >= self.goal):
-            reward = 0 #500? or 10?
+            reward = 0
             if self.fresh_start:
                 reward = 500
             done = True
@@ -179,7 +181,7 @@ class MazeGameEnv(gym.Env):
             reward = -250
             done = True
         elif collect:
-            reward = 0 #10?
+            reward = -0.9 #-0.9 or -1??
             if self.fresh_start:
                 reward = 10
             done = False
@@ -187,6 +189,7 @@ class MazeGameEnv(gym.Env):
             reward = -1
             done = False
         if self.curr_steps > self.max_steps:
+            reward = -250
             done = True
 
         truncated = done
@@ -197,7 +200,7 @@ class MazeGameEnv(gym.Env):
 
     def valid_mask(self, curr_pos, board):
         row, col = curr_pos
-        mask = np.zeros(5, dtype=bool)
+        mask = np.zeros(6, dtype=bool)
 
         # If agent goes out of the grid
         if row > 0:

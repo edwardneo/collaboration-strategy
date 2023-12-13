@@ -1,15 +1,14 @@
 import gymnasium as gym
 from gymnasium.wrappers import EnvCompatibility
-from stable_baselines3 import PPO
 from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 import argparse
 
 from cs285.envs.maze_game_hidden import MazeGameEnv
-#from cs285.networks.mask import TorchActionMaskModel
 import warnings
 from gymnasium.wrappers import FlattenObservation
-from stable_baselines3.common.evaluation import evaluate_policy
+from sb3_contrib.common.maskable.evaluation import evaluate_policy
+from sb3_contrib.common.maskable.utils import get_action_masks
 
 
 
@@ -38,42 +37,38 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-
-
-    # create directory for logging
-    #logdir_prefix = "hw5_explore_"  # keep for autograder
-
-    #logger = make_logger(logdir_prefix, config)
-
-    ###COMMAND1: python scripts/test2.py -s trained_model -f -t 500000
-    ###COMMAND2: python scripts/test2.py -l trained_model -s trained_model2 -t 300000
+    ### line 145 in ppo_mask.py: self.policy = MaskableActorCriticPolicy( ...
+    ###COMMAND1: python scripts/test2.py -s trained_model -f -t 100000
+    ###COMMAND2: python scripts/test2.py -l trained_model -s trained_model2 -t 100000
     ###COMMAND3: python scripts/test2.py -l trained_model2  -t 0 -e 0 -r 
     if args.load:
         name = args.load
         env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = args.fresh))
         env = ActionMasker(env, lambda env: env.valid_mask(env.pos, env.board))
-        model = MaskablePPO.load(name, env = env, tensorboard_log=args.logdir) #"./trained_model"
+        model = MaskablePPO.load(name, env = env, tensorboard_log=args.logdir) 
     else:
         env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = args.fresh))
         env = ActionMasker(env, lambda env: env.valid_mask(env.pos, env.board))
-        model = MaskablePPO("MlpPolicy", env, verbose=1, tensorboard_log=args.logdir)
+        model = MaskablePPO("MlpPolicy", env, verbose=1, tensorboard_log=args.logdir) #cnn policy?  or biggerMLP?
 
     if args.train:
         model.learn(total_timesteps=args.train,  tb_log_name=args.train_name)
     if args.save:
         model.save(args.save)
     if args.eval:
-        mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=args.eval)
+        mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=args.eval) #buggy
 
         # Print the results
         print(f"Mean Reward: {mean_reward:.2f}")
         print(f"Std Reward: {std_reward:.2f}")
     if args.rend:
-        vec_env = model.get_env()
-        obs = vec_env.reset()
-        for i in range(1000):
-            action, _states = model.predict(obs, deterministic=True)
-            obs, reward, done, info = vec_env.step(action)
-            vec_env.render()
+        obs, _ = env.reset()
+        while True:
+            action_masks = get_action_masks(env)
+            action, _states = model.predict(obs, action_masks=action_masks)
+            obs, reward, terminated, truncated, info = env.step(action)
+            env.render() #kinda buggy?
+            if terminated:
+                obs, _ = env.reset()
 
     env.close()
