@@ -111,6 +111,8 @@ class MazeGameEnvTwoPlayer(gym.Env):
             WINDOW_SIZE[0] / self.num_rows,
             WINDOW_SIZE[1] / self.num_cols,
         )
+        self.even_timestep = True
+
     def set_render_mode(self, mode):
         self.render_mode = mode
     def random_board(self):
@@ -146,6 +148,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.sim_bag = np.array(
             [0] * self.num_distinct_items
         )  # Bag represented as a 1D NumPy array
+        self.even_timestep = True
 
         return self._generate_observation(self.pos, self.sim_pos, self.bag, self.sim_bag_estimate), {}
     
@@ -302,20 +305,38 @@ class MazeGameEnvTwoPlayer(gym.Env):
                     )
 
                 if np.array_equal(np.array(self.pos), np.array([row, col])):  # Agent
-                    pygame.draw.circle(
-                        self.window,
-                        pygame.Color("black"),
-                        (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
-                        30
-                    )
+                    if self.even_timestep:
+                        pygame.draw.circle(
+                            self.window,
+                            pygame.Color("black"),
+                            (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
+                            30
+                        )
+                    else:
+                        pygame.draw.circle(
+                            self.window,
+                            pygame.Color(""),
+                            (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
+                            30,
+                            width=5
+                        )
                 
                 if np.array_equal(np.array(self.sim_pos), np.array([row, col])):  # Simulated Agent
-                    pygame.draw.circle(
-                        self.window,
-                        pygame.Color("grey"),
-                        (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
-                        20
-                    )
+                    if self.even_timestep:
+                        pygame.draw.circle(
+                            self.window,
+                            pygame.Color("grey"),
+                            (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
+                            20
+                        )
+                    else:
+                        pygame.draw.circle(
+                            self.window,
+                            pygame.Color("grey"),
+                            (cell[0] + self.cell_size[0] / 2, cell[1] + self.cell_size[1] / 2),
+                            20,
+                            width=5
+                        )
         
         # Draw grid lines
         for row in range(0, self.num_rows + 1):
@@ -335,6 +356,9 @@ class MazeGameEnvTwoPlayer(gym.Env):
                 (col * self.cell_size[0], WINDOW_SIZE[1]),
                 width=2
             )
+        
+        # Flip timestep boolean
+        self.even_timestep = not self.even_timestep
 
         if mode == "human":
             pygame.display.update()
