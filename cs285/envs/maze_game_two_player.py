@@ -218,11 +218,12 @@ class MazeGameEnvTwoPlayer(gym.Env):
         if action == 5:
             self.sim_bag_estimate = self.sim_bag
             if self.encourage:
-                reward += 0.1 + 2*self.fresh_start
+                reward += 0.2 + 2*self.fresh_start
         
         if not done:
             sim_obs = self._generate_observation(self.sim_pos, self.pos, self.sim_bag, self.bag_estimate)
-            sim_ac = self.sim_agent.predict(spaces.utils.flatten(self.observation_space, sim_obs))[0]
+            action_masks = self.valid_mask(self.sim_pos, self.board)
+            sim_ac, _states = self.sim_agent.predict(spaces.utils.flatten(self.observation_space, sim_obs), action_masks=action_masks)
             if sim_ac == 5:
                 self.bag_estimate = self.bag
             self.board, self.sim_pos, self.sim_bag, _, _ = self._update(self.sim_pos, self.sim_bag, sim_ac)

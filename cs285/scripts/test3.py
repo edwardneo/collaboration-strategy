@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
 
     ### COMMAND1: python scripts/test3.py -p2 trained_model2 -s trained_model_p1 -enc -f -t 10000
-    ### COMMAND1: python scripts/test3.py -p2 trained_model_p1 -l trained_model_p1 -s trained_model_p1 -enc -f -t 50000
+    ### COMMAND1: python scripts/test3.py -p2 trained_model_p1 -l trained_model_p1 -s trained_model_p1 -enc -f -t 30000
     ### COMMAND2: python scripts/test3.py -p2 trained_model_p1 -l trained_model_p1 -s trained_model_p2 -t -enc 30000
     ### COMMAND3: python scripts/test3.py -p2 trained_model_p2 -l trained_model_p2 -s trained_model_p2 -t 10000 -ep 5
     ### run COMMAND3 multiple times
