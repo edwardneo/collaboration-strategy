@@ -22,7 +22,7 @@ WINDOW_SIZE = (600, 600)
 class MazeGameEnv(gym.Env):
     metadata = {"render_modes": [ "human", "ansi", "rgb_array"], "render_fps": 1}
 
-    def __init__(self, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None, max_steps = 20):
+    def __init__(self, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, render_mode=None, max_steps = 20, fresh_start = True):
         super(MazeGameEnv, self).__init__()
 
         # Save initial parameters
@@ -37,6 +37,9 @@ class MazeGameEnv(gym.Env):
         self.curr_steps = 0
         self.total_steps = 0
         self.vis_size = 1
+
+        self.fresh_start = fresh_start
+
 
       
         self.num_rows, self.num_cols = self.board.shape
@@ -155,12 +158,16 @@ class MazeGameEnv(gym.Env):
         # Reward function
         if np.all(self.bag >= self.goal):
             reward = 10 #500?
+            if self.fresh_start:
+                reward = 500
             done = True
         elif not is_legal:
             reward = -250
             done = True
         elif collect:
             reward = 0 #10?
+            if self.fresh_start:
+                reward = 10
             done = False
         else:
             reward = -1

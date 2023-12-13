@@ -33,14 +33,15 @@ if __name__ == "__main__":
 
     #logger = make_logger(logdir_prefix, config)
 
-    ###COMMAND: python scripts/test2.py -l trained_model -s trained_model2  
+    ###COMMAND1: python scripts/test2.py -s trained_model
+    ###COMMAND2: python scripts/test2.py -l trained_model -s trained_model2  
     if args.load:
         name = args.load
-        env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human"))
+        env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = False))
 
         model = PPO.load(name, env = env) #"./trained_model"
     else:
-        env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human"))
+        env = FlattenObservation(gym.make('MazeGame-v1', render_mode = "human", fresh_start = True))
         model = PPO("MlpPolicy", env, verbose=1)
     if args.train:
         model.learn(total_timesteps=args.train)
