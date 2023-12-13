@@ -7,18 +7,19 @@ from sb3_contrib import MaskablePPO
 
 BOARD = np.array(
     [
-        [-1, 0, 0, 2, 0],
-        [0, 0, 1, 1, 0],
-        [0, 2, 0, -1, 1],
-        [1, -1, 1, 2, 1],
-         [-1, 0, 2, 2, 2]
+        [0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1],
+        [2, 2, 2, 2, 2, 2],
+        [3, 3, 3, 3, 3, 3],
+        [-1, -1, -1, -1, -1, -1],
+        [-1, -1, -1, -1, -1, -1]
     ]
 )
 
-GOAL = np.array([3, 2, 1])
+GOAL = np.array([3, 3, 3, 3])
 PLAYER_POSITION = (0,0)
-SIM_PLAYER_POSITION = (3, 3)
-COLORS = ["red", "blue", "green"]
+SIM_PLAYER_POSITION = (5, 5)
+COLORS = ["red", "blue", "green", "pink"]
 
 WINDOW_SIZE = (600, 600)
 
@@ -113,41 +114,53 @@ class MazeGameEnvTwoPlayer(gym.Env):
         )
         self.even_timestep = True
 
+        self.reset()
+
     def set_render_mode(self, mode):
         self.render_mode = mode
-    def random_board(self):
+        
+    def random_state(self):
         flattened = BOARD.flatten()
         np.random.shuffle(flattened)
-        return flattened.reshape((self.num_rows, self.num_cols))
+        random_board = flattened.reshape((self.num_rows, self.num_cols))
+
+        full_color = np.random.randint(self.num_distinct_items)
+        random_bag = np.array([0] * self.num_distinct_items)
+        random_bag[full_color] = 3
+
+        sim_full_color = np.random.randint(self.num_distinct_items)
+        random_sim_bag = np.array([0] * self.num_distinct_items)
+        random_sim_bag[sim_full_color] = 3
+
+        return random_board, random_bag, random_sim_bag
 
     def reset(self, seed=None, options=None):
         super(MazeGameEnvTwoPlayer, self).reset()
         self.curr_steps = 0
+        board, bag, sim_bag = self.random_state()
 
         self.board = np.array(
-            self.random_board()
+            board
             #self.initial_parameters["board"]
         )  # Maze represented as a 2D NumPy array
         self.pos = np.array(
             self.initial_parameters["pos"]
         )  # Starting position is current posiiton of agent
-        self.sim_bag_estimate = self.bag = np.array(
-            [0] * self.num_distinct_items
-        ) 
+
+        self.bag = np.array(bag)  # Bag represented as a 1D NumPy array
         self.bag_estimate = np.array(
             [0] * self.num_distinct_items
-        ) 
-        self.bag = np.array(
-            [0] * self.num_distinct_items
-        )  # Bag represented as a 1D NumPy array
+        )
 
         self.sim_agent = MaskablePPO.load(self.save_file)
         self.sim_pos = np.array(
             self.initial_parameters["sim_pos"]
         )  # Starting position is current posiiton of simulated agent
-        self.sim_bag = np.array(
+        self.sim_bag = np.array(sim_bag)  # Bag represented as a 1D NumPy array
+        self.sim_bag_estimate = np.array(
             [0] * self.num_distinct_items
-        )  # Bag represented as a 1D NumPy array
+        )
+
         self.even_timestep = True
 
         return self._generate_observation(self.pos, self.sim_pos, self.bag, self.sim_bag_estimate), {}
@@ -225,7 +238,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
         
         if not done:
             sim_obs = self._generate_observation(self.sim_pos, self.pos, self.sim_bag, self.bag_estimate)
-            action_masks = self.valid_mask(self.sim_pos, self.board)
+            action_masks = self.valid_mask(self.sim_pos, self.board, can_communicate=False)
             sim_ac, _states = self.sim_agent.predict(spaces.utils.flatten(self.observation_space, sim_obs), action_masks=action_masks)
             if sim_ac == 5:
                 self.bag_estimate = self.bag
@@ -239,7 +252,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
 
         return self._generate_observation(self.pos, self.sim_pos, self.bag, self.sim_bag_estimate), reward, done, truncated, info
 
-    def valid_mask(self, curr_pos, board):
+    def valid_mask(self, curr_pos, board, can_communicate=True):
         row, col = curr_pos
         mask = np.zeros(6, dtype=bool)
 
@@ -254,7 +267,12 @@ class MazeGameEnvTwoPlayer(gym.Env):
             mask[3] = 1
         if board[row, col] != -1:
             mask[4] = 1
+<<<<<<< HEAD
         mask[5] = 1
+=======
+        if can_communicate:
+            mask[5] = 1
+>>>>>>> 14b11f366593cb9d5e1b583fff1567e54270aacd
         return mask
 
     def _generate_observation(self, pos, other_pos, bag, other_bag):
