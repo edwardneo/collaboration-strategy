@@ -3,20 +3,20 @@ from gymnasium import spaces
 from gymnasium.error import DependencyNotInstalled
 import numpy as np
 from stable_baselines3 import PPO
-from maze_game_hidden import MazeGameEnv
 
 BOARD = np.array(
     [
         [-1, 0, 0, 2],
         [0, 0, 1, 1],
         [0, 2, 0, -1],
-        [1, -1, 1, 2]
+        [1, -1, 1, 2],
+         [-1, 0, 2, 2]
     ]
 )
 
-GOAL = np.array([1, 1, 1])
-PLAYER_POSITION = (1,1)
-SIM_PLAYER_POSITION = (2, 2)
+GOAL = np.array([3, 2, 1])
+PLAYER_POSITION = (0,0)
+SIM_PLAYER_POSITION = (3, 3)
 COLORS = ["red", "blue", "green"]
 
 WINDOW_SIZE = (600, 600)
@@ -176,7 +176,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.board, self.pos, self.bag, is_legal, collect = self._update(self.pos, self.bag, action)
 
         # Reward function
-        if np.all(self.bag >= self.goal):
+        if np.all(self.bag + self.sim_bag >= self.goal):
             reward = 10 #500?
             if self.fresh_start:
                 reward = 500
@@ -198,7 +198,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
         if not done:
             sim_obs = self._generate_observation(self.sim_pos, self.sim_bag)
             sim_ac = self.sim_agent.predict(spaces.utils.flatten(self.observation_space, sim_obs)) 
-            self.board, self.sim_pos, self.sim_bag, _, _ = self._update(self.sim_pos, self.sim_bag, sim_ac)
+            self.board, self.sim_pos, self.sim_bag, _, _ = self._update(self.sim_pos, self.sim_bag, sim_ac[0])
 
         # Action mask
         mask = self.valid_mask(self.pos, self.board)

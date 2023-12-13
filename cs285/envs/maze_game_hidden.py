@@ -2,7 +2,7 @@ import gymnasium as gym
 from gymnasium import spaces
 from gymnasium.error import DependencyNotInstalled
 import numpy as np
-
+'''
 BOARD = np.array(
     [
         [-1, 0, 0, 2],
@@ -13,7 +13,21 @@ BOARD = np.array(
 )
 
 GOAL = np.array([1, 1, 1])
-PLAYER_POSITION = (1,1)
+PLAYER_POSITION = (1,1)'''
+
+BOARD = np.array(
+    [
+        [-1, 0, 0, 2],
+        [0, 0, 1, 1],
+        [0, 2, 0, -1],
+        [1, -1, 1, 2],
+         [-1, 0, 2, 2]
+    ]
+)
+
+GOAL = np.array([3, 2, 1])
+PLAYER_POSITION = (0,0)
+
 COLORS = ["red", "blue", "green"]
 
 WINDOW_SIZE = (600, 600)
@@ -157,7 +171,7 @@ class MazeGameEnv(gym.Env):
 
         # Reward function
         if np.all(self.bag >= self.goal):
-            reward = 10 #500?
+            reward = 0 #500? or 10?
             if self.fresh_start:
                 reward = 500
             done = True
