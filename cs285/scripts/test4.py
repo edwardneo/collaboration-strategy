@@ -36,21 +36,22 @@ if __name__ == "__main__":
     parser.add_argument("--fresh", "-f", action="store_true")
     parser.add_argument("--encourage", "-enc", action="store_true")
     parser.add_argument("--epochs", "-ep",type=int, default=1)
+    parser.add_argument("--cost", "-c",type=int, default=0)
 
     args = parser.parse_args()
 
 
-    ### COMMAND0: python scripts/test4.py -p2 trained_model -s trained_model_p1 -t 50000
+    ### COMMAND0: python scripts/test4.py -p2 trained_model -l trained_model -s trained_model_p1 -t 500 -c 20
     ### python scripts/test4.py -l trained_model_p1 -p2 trained_model  -t 0 -e 0 -r 
     ###how to motivate communication and speed? maybe the goals have to be different? idk
     for _ in range(args.epochs):
         if args.load:
             name = args.load
-            env = FlattenObservation(gym.make('MazeGame-v2', save_file = args.player2, render_mode = "human", fresh_start = args.fresh, encourage = args.encourage))
+            env = FlattenObservation(gym.make('MazeGame-v2', save_file = args.player2, render_mode = "human", fresh_start = args.fresh, encourage = args.encourage, cost = args.cost))
             env = ActionMasker(env, lambda env: env.valid_mask(env.pos, env.board))
             model = MaskablePPO.load(name, env = env, tensorboard_log=args.logdir) 
         else:
-            env = FlattenObservation(gym.make('MazeGame-v2', save_file = args.player2, render_mode = "human", fresh_start = args.fresh, encourage = args.encourage))
+            env = FlattenObservation(gym.make('MazeGame-v2', save_file = args.player2, render_mode = "human", fresh_start = args.fresh, encourage = args.encourage, cost = args.cost))
             env = ActionMasker(env, lambda env: env.valid_mask(env.pos, env.board))
             model = MaskablePPO("MlpPolicy", env, verbose=1, tensorboard_log=args.logdir) #cnn policy? 
         if args.train:

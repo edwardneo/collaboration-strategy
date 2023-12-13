@@ -26,7 +26,7 @@ WINDOW_SIZE = (600, 600)
 class MazeGameEnvTwoPlayer(gym.Env):
     metadata = {"render_modes": [ "human", "ansi", "rgb_array"], "render_fps": 1}
 
-    def __init__(self, save_file, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, sim_pos=SIM_PLAYER_POSITION, render_mode=None, max_steps = 40, fresh_start = True, encourage = False):
+    def __init__(self, save_file, board=BOARD, goal=GOAL, pos=PLAYER_POSITION, sim_pos=SIM_PLAYER_POSITION, render_mode=None, max_steps = 40, fresh_start = True, encourage = False, cost = 0):
         super(MazeGameEnvTwoPlayer, self).__init__()
 
         # Save initial parameters
@@ -37,6 +37,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
         self.goal = np.array(goal)  # Goal represented as a 1D NumPy array
         self.pos = (pos[0], pos[1])  # Starting position is current posiiton of agent
 
+        self.cost = cost
         self.encourage = encourage
 
 
@@ -220,7 +221,8 @@ class MazeGameEnvTwoPlayer(gym.Env):
             reward = -250
             done = True
         if action == 5:
-            self.sim_activate = True           
+            self.sim_activate = True       
+            reward = -self.cost   
         
         if (not done) and self.sim_activate:
             sim_obs = self._generate_observation(self.sim_pos, self.pos, self.sim_bag, self.bag_estimate)

@@ -267,12 +267,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
             mask[3] = 1
         if board[row, col] != -1:
             mask[4] = 1
-<<<<<<< HEAD
         mask[5] = 1
-=======
-        if can_communicate:
-            mask[5] = 1
->>>>>>> 14b11f366593cb9d5e1b583fff1567e54270aacd
         return mask
 
     def _generate_observation(self, pos, other_pos, bag, other_bag):
