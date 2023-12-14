@@ -7,18 +7,17 @@ from sb3_contrib import MaskablePPO
 
 BOARD = np.array(
     [
-        [0, 0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 1, 1],
-        [2, 2, 2, 2, 2, 2],
-        [3, 3, 3, 3, 3, 3],
-        [-1, -1, -1, -1, -1, -1],
-        [-1, -1, -1, -1, -1, -1]
+        [-1, 0, 0, 2, 0],
+        [0, 0, 1, 1, 0],
+        [0, 2, 0, -1, 1],
+        [1, -1, 1, 2, 1],
+         [-1, 0, 2, 2, 2]
     ]
 )
 
-GOAL = np.array([3, 3, 3, 3])
+GOAL = np.array([3, 2, 1])
 PLAYER_POSITION = (0,0)
-SIM_PLAYER_POSITION = (5, 5)
+SIM_PLAYER_POSITION = (4, 4)
 COLORS = ["red", "blue", "green", "pink"]
 
 WINDOW_SIZE = (600, 600)

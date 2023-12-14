@@ -17,20 +17,18 @@ PLAYER_POSITION = (1,1)'''
 
 BOARD = np.array(
     [
-        [0, 0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 1, 1],
-        [2, 2, 2, 2, 2, 2],
-        [3, 3, 3, 3, 3, 3],
-        [-1, -1, -1, -1, -1, -1],
-        [-1, -1, -1, -1, -1, -1]
+        [-1, 0, 0, 2, 0],
+        [0, 0, 1, 1, 0],
+        [0, 2, 0, -1, 1],
+        [1, -1, 1, 2, 1],
+         [-1, 0, 2, 2, 2]
     ]
 )
 
-GOAL = np.array([3, 3, 3, 3])
-
+GOAL = np.array([3, 2, 1])
 PLAYER_POSITION = (0,0)
 
-COLORS = ["red", "blue", "green", "pink"]
+COLORS = ["red", "blue", "green"]
 
 WINDOW_SIZE = (600, 600)
 
@@ -106,39 +104,26 @@ class MazeGameEnv(gym.Env):
             WINDOW_SIZE[0] / self.num_rows,
             WINDOW_SIZE[1] / self.num_cols,
         )
-
-        self.reset()
-
     def set_render_mode(self, mode):
         self.render_mode = mode
-
-    def random_state(self):
+    def random_board(self):
         flattened = BOARD.flatten()
         np.random.shuffle(flattened)
-        random_board = flattened.reshape((self.num_rows, self.num_cols))
-
-        full_color = np.random.randint(self.num_distinct_items)
-        random_bag = np.array([0] * self.num_distinct_items)
-        random_bag[full_color] = 3
-
-        return random_board, random_bag
+        return flattened.reshape((self.num_rows, self.num_cols))
 
     def reset(self, seed=None, options=None):
         super(MazeGameEnv, self).reset()
         self.curr_steps = 0
 
-        board, bag = self.random_state()
-
         self.board = np.array(
-            board
+            self.random_board()
             #self.initial_parameters["board"]
         )  # Maze represented as a 2D NumPy array
         self.pos = np.array(
             self.initial_parameters["pos"]
         )  # Starting position is current posiiton of agent
-
         self.bag = np.array(
-            bag
+            [0] * self.num_distinct_items
         )  # Bag represented as a 1D NumPy array
 
         return self._generate_observation(), {}
