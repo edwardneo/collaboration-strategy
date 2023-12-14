@@ -37,8 +37,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    ### line 145 in ppo_mask.py: self.policy = MaskableActorCriticPolicy( ...
-    ###COMMAND1: python scripts/test2.py -s trained_model -f -t 100000
+    ###COMMAND1: python scripts/hidden.py -s trained_model -f -t 100000
+    ###COMMAND2: python scripts/hidden.py -s trained_model2 -l trained_model -t 100000
 
     if args.load:
         name = args.load

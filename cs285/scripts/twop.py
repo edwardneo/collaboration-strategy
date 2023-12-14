@@ -40,12 +40,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    ### COMMAND0: python scripts/test3.py -p2 trained_model2 -s trained_model_p1 -enc -f -t 10000
-    ### COMMAND1: python scripts/test3.py -p2 trained_model_p1 -l trained_model_p1 -s trained_model_p1 -enc -f -t 30000
-    ### COMMAND2: python scripts/test3.py -p2 trained_model_p1 -l trained_model_p1 -s trained_model_p2 -enc -t 30000
-    ### COMMAND3: python scripts/test3.py -p2 trained_model_p2 -l trained_model_p2 -s trained_model_p2 -t 10000 -ep 5
+    ### COMMAND0: python scripts/twop.py -p2 trained_model2 -s trained_model_p1 -enc -f -t 10000
+    ### COMMAND1: python scripts/twop.py -p2 trained_model_p1 -l trained_model_p1 -s trained_model_p1 -enc -f -t 30000
+    ### COMMAND2: python scripts/twop.py -p2 trained_model_p1 -l trained_model_p1 -s trained_model_p2 -enc -t 30000
+    ### COMMAND3: python scripts/twop.py -p2 trained_model_p2 -l trained_model_p2 -s trained_model_p2 -t 10000 -ep 5
     ### run COMMAND3 multiple times
-    ### python scripts/test3.py -l trained_model_p2 -p2 trained_model2  -t 0 -e 0 -r 
+    ### python scripts/twop.py -l trained_model_p2 -p2 trained_model2  -t 0 -e 0 -r 
     ###how to motivate communication and speed? maybe the goals have to be different? idk
     for _ in range(args.epochs):
         if args.load:

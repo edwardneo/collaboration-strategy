@@ -44,9 +44,9 @@ if __name__ == "__main__":
     print(args.cost)
 
 
-    ### COMMAND0: python scripts/test4.py -p2 trained_model -l trained_model -s trained_model_p1 -t 500 -c 20
-    ### python scripts/test4.py -l trained_model_p1 -p2 trained_model  -t 0 -e 0 -r 
-    ###how to motivate communication and speed? maybe the goals have to be different? idk
+    ### python scripts/toy.py -p2 trained_model -l trained_model -s trained_model_p1 -t 500 -c 20
+    ### python scripts/toy.py -p2 trained_model_p1 -l trained_model_p1 -s trained_model_p2 -t 100000 -c 20
+    ### python scripts/toy.py -l trained_model_p2 -t 0 -e 0 -r 
     for _ in range(args.epochs):
         if args.load:
             name = args.load
