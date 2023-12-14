@@ -1,1 +1,1 @@
-this code came to me in a dream, and so did I
+CS 285 Final Project: Reinforcement Learning for Two Player Imperfect Information Cooperative Games
