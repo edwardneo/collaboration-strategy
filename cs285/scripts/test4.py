@@ -8,7 +8,7 @@ from gymnasium.wrappers import FlattenObservation
 from sb3_contrib.common.maskable.evaluation import evaluate_policy
 from sb3_contrib.common.maskable.utils import get_action_masks
 from sb3_contrib import MaskablePPO
-from sb3_contrib.common.wrappers import ActionMasker
+from sb3_contrib.common.wrappers import ActionMasker, TimeFeatureWrapper
 
 
 
@@ -36,9 +36,12 @@ if __name__ == "__main__":
     parser.add_argument("--fresh", "-f", action="store_true")
     parser.add_argument("--encourage", "-enc", action="store_true")
     parser.add_argument("--epochs", "-ep",type=int, default=1)
-    parser.add_argument("--cost", "-c",type=int, default=0)
+    parser.add_argument("--cost", "-c", type=float, default=0)
+    parser.add_argument("--num_comm_runs", "-n", type=int, default=0)
 
     args = parser.parse_args()
+
+    print(args.cost)
 
 
     ### COMMAND0: python scripts/test4.py -p2 trained_model -l trained_model -s trained_model_p1 -t 500 -c 20
@@ -47,11 +50,11 @@ if __name__ == "__main__":
     for _ in range(args.epochs):
         if args.load:
             name = args.load
-            env = FlattenObservation(gym.make('MazeGame-v2', save_file = args.player2, render_mode = "human", fresh_start = args.fresh, encourage = args.encourage, cost = args.cost))
+            env = TimeFeatureWrapper(FlattenObservation(gym.make('MazeGame-v2', save_file = args.player2, render_mode = "human", fresh_start = args.fresh, encourage = args.encourage, cost = args.cost)), max_steps=40)
             env = ActionMasker(env, lambda env: env.valid_mask(env.pos, env.board))
             model = MaskablePPO.load(name, env = env, tensorboard_log=args.logdir) 
         else:
-            env = FlattenObservation(gym.make('MazeGame-v2', save_file = args.player2, render_mode = "human", fresh_start = args.fresh, encourage = args.encourage, cost = args.cost))
+            env = TimeFeatureWrapper(FlattenObservation(gym.make('MazeGame-v2', save_file = args.player2, render_mode = "human", fresh_start = args.fresh, encourage = args.encourage, cost = args.cost)), max_steps=40)
             env = ActionMasker(env, lambda env: env.valid_mask(env.pos, env.board))
             model = MaskablePPO("MlpPolicy", env, verbose=1, tensorboard_log=args.logdir) #cnn policy? 
         if args.train:
@@ -66,12 +69,40 @@ if __name__ == "__main__":
         print(f"Std Reward: {std_reward:.2f}")
     if args.rend:
         obs, _ = env.reset()
+        action_list = []
         while True:
             action_masks = get_action_masks(env)
             action, _states = model.predict(obs, action_masks=action_masks)
+            if action == 5:
+                print(len(action_list))
+            action_list.append(action)
             obs, reward, terminated, truncated, info = env.step(action)
             env.render()
             if terminated:
                 obs, _ = env.reset()
+                print(action_list)
+                action_list = []
+    
+    if args.num_comm_runs > 0:
+        total = 0
+        num_comm = 0
+        for _ in range(args.num_comm_runs):
+            obs, _ = env.reset()
+            action_list = []
+            did_communicate = False
+            terminated = False
+            while not terminated:
+                action_masks = get_action_masks(env)
+                action, _states = model.predict(obs, action_masks=action_masks)
+                if action == 5:
+                    total += len(action_list)
+                    did_communicate = True
+                action_list.append(action)
+                obs, reward, terminated, truncated, info = env.step(action)
+                # env.render()
+            num_comm += did_communicate
+            # print([int(ac) for ac in action_list])
+        print(f"Average communication time: {total / num_comm}")
+        print(f"Percentage of communication runs: {num_comm / args.num_comm_runs}")
 
     env.close()

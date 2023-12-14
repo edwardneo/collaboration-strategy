@@ -255,7 +255,7 @@ class MazeGameEnvTwoPlayer(gym.Env):
             mask[3] = 1
         if board[row, col] != -1:
             mask[4] = 1
-        mask[5] = not self.sim_activate
+        mask[5] = 1 # not self.sim_activate
         return mask
 
     def _generate_observation(self, pos, other_pos, bag, other_bag):

@@ -4,7 +4,7 @@ from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 import argparse
 
-from cs285.envs.maze_game_simple import MazeGameEnv
+from cs285.envs.maze_game_hidden import MazeGameEnv
 import warnings
 from gymnasium.wrappers import FlattenObservation
 from sb3_contrib.common.maskable.evaluation import evaluate_policy
