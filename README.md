@@ -1,1 +1,1 @@
-Derived from Berkeley's CS 285 homeworks
+this code came to me in a dream, and so did I
